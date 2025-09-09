@@ -1,0 +1,20 @@
+[Unit]
+Description=Scontrini API (FastAPI/Uvicorn)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=userscontrini
+Group=userscontrini
+WorkingDirectory=/opt/scontrini/src/backend
+EnvironmentFile=/opt/scontrini/config/api.env
+Environment=PATH=/opt/scontrini/venv/bin:/usr/bin
+ExecStart=/opt/scontrini/venv/bin/uvicorn main:app --host ${UVICORN_HOST} --port ${UVICORN_PORT} --workers ${UVICORN_WORKERS} --proxy-headers --forwarded-allow-ips=*
+Restart=always
+RestartSec=2
+TimeoutStopSec=15
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

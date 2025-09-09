@@ -1,0 +1,155 @@
+import React, { useEffect, useState } from "react";
+import { Badge, Card, Section } from "../lib/ui";
+
+type User = {
+  id: number; username: string; nome?: string; cognome?: string;
+  email?: string; telefono?: string; ruolo?: string; emittente_id?: number;
+  created_at: string; updated_at: string;
+};
+
+export default function UsersSettings({ emittenteId, canEdit, onBack }:{
+  emittenteId: number; canEdit: boolean; onBack: ()=>void;
+}){
+  const [list, setList] = useState<User[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [editing, setEditing] = useState<User|null>(null);
+  const [form, setForm] = useState({
+    username:"", password:"", nome:"", cognome:"", email:"", telefono:"", ruolo:"user"
+  });
+  const [q, setQ] = useState("");
+
+  async function load(){
+    setLoading(true);
+    try{
+      const r = await fetch(`/users?emittente_id=${emittenteId}`, {cache:"no-store"});
+      const j = await r.json(); setList(j);
+    } finally { setLoading(false); }
+  }
+  useEffect(()=>{ load(); }, [emittenteId]);
+
+  const filtered = list.filter(u => {
+    const s = `${u.username} ${(u.nome||"")} ${(u.cognome||"")} ${(u.email||"")} ${(u.ruolo||"")}`.toLowerCase();
+    return s.includes(q.trim().toLowerCase());
+  });
+
+  async function createUser(ev:React.FormEvent){
+    ev.preventDefault();
+    if(!form.username.trim() || !form.password.trim()) return alert("Username e Password obbligatori");
+    const body = { ...form, emittente_id: emittenteId };
+    const r = await fetch("/users", { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(body) });
+    if(r.status===409){ alert("Username già esistente"); return; }
+    if(!r.ok){ alert("Errore creazione utente"); return; }
+    setForm({ username:"", password:"", nome:"", cognome:"", email:"", telefono:"", ruolo:"user" });
+    load();
+  }
+
+  async function saveEdit(ev:React.FormEvent){
+    ev.preventDefault();
+    if(!editing) return;
+    const payload:any = { nome: editing.nome||"", cognome: editing.cognome||"", email: editing.email||"", telefono: editing.telefono||"", ruolo: editing.ruolo||"user", emittente_id: emittenteId };
+    if((editing as any)._newPassword){ payload.password = (editing as any)._newPassword; }
+    const r = await fetch(`/users/${editing.id}`, { method:"PUT", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(payload) });
+    if(!r.ok){ alert("Errore salvataggio"); return; }
+    setEditing(null); load();
+  }
+
+  async function del(u:User){
+    if(!confirm(`Eliminare utente ${u.username}?`)) return;
+    const r = await fetch(`/users/${u.id}`, { method:"DELETE" });
+    if(r.status===409){ alert("Impossibile eliminare: è l'ultimo admin"); return; }
+    if(r.status!==204){ alert("Errore eliminazione"); return; }
+    load();
+  }
+
+  return (
+    <Section title="Impostazioni · Utenti">
+      <div className="mb-3 flex items-center gap-2">
+        <button onClick={onBack} className="px-3 py-1.5 rounded-lg border border-zinc-700 text-sm hover:bg-zinc-900">← Indietro</button>
+        <input value={q} onChange={e=>setQ(e.target.value)} placeholder="Cerca utente, nome, email, ruolo…" className="flex-1 rounded-lg bg-zinc-950 border border-zinc-800 px-3 py-2"/>
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Lista */}
+        <div className="border border-zinc-800 rounded-2xl p-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="font-medium">Utenti ({filtered.length})</div>
+            {loading && <span className="text-xs text-zinc-400">aggiorno…</span>}
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="text-zinc-400">
+                <tr><th className="text-left py-2 pr-3">Username</th><th className="text-left py-2 pr-3">Nome</th><th className="text-left py-2 pr-3">Ruolo</th><th className="text-left py-2 pr-3">Email</th><th className="py-2 text-right">Azioni</th></tr>
+              </thead>
+              <tbody>
+                {filtered.map(u=>(
+                  <tr key={u.id} className="border-t border-zinc-800">
+                    <td className="py-2 pr-3">{u.username}</td>
+                    <td className="py-2 pr-3">{[u.nome,u.cognome].filter(Boolean).join(" ")}</td>
+                    <td className="py-2 pr-3"><Badge>{u.ruolo||"user"}</Badge></td>
+                    <td className="py-2 pr-3">{u.email||"—"}</td>
+                    <td className="py-2 text-right">
+                      {canEdit ? (
+                        <>
+                          <button className="text-xs underline mr-3" onClick={()=>setEditing({...u} as any)}>Modifica</button>
+                          <button className="text-xs underline text-red-400" onClick={()=>del(u)}>Elimina</button>
+                        </>
+                      ) : <span className="text-xs text-zinc-500">sola lettura</span>}
+                    </td>
+                  </tr>
+                ))}
+                {!filtered.length && !loading && (
+                  <tr><td colSpan={5} className="py-6 text-center text-zinc-500">Nessun utente</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Crea utente */}
+        <div className="border border-zinc-800 rounded-2xl p-4">
+          <div className="font-medium mb-3">Nuovo utente</div>
+          <form onSubmit={createUser} className="grid grid-cols-2 gap-3">
+            <input className="rounded-lg bg-zinc-950 border border-zinc-800 px-3 py-2 col-span-1" placeholder="Username" value={form.username} onChange={e=>setForm({...form, username:e.target.value})} disabled={!canEdit}/>
+            <input className="rounded-lg bg-zinc-950 border border-zinc-800 px-3 py-2 col-span-1" type="password" placeholder="Password" value={form.password} onChange={e=>setForm({...form, password:e.target.value})} disabled={!canEdit}/>
+            <input className="rounded-lg bg-zinc-950 border border-zinc-800 px-3 py-2" placeholder="Nome" value={form.nome} onChange={e=>setForm({...form, nome:e.target.value})} disabled={!canEdit}/>
+            <input className="rounded-lg bg-zinc-950 border border-zinc-800 px-3 py-2" placeholder="Cognome" value={form.cognome} onChange={e=>setForm({...form, cognome:e.target.value})} disabled={!canEdit}/>
+            <input className="rounded-lg bg-zinc-950 border border-zinc-800 px-3 py-2 col-span-2" placeholder="Email" value={form.email} onChange={e=>setForm({...form, email:e.target.value})} disabled={!canEdit}/>
+            <input className="rounded-lg bg-zinc-950 border border-zinc-800 px-3 py-2 col-span-1" placeholder="Telefono" value={form.telefono} onChange={e=>setForm({...form, telefono:e.target.value})} disabled={!canEdit}/>
+            <select className="rounded-lg bg-zinc-950 border border-zinc-800 px-3 py-2 col-span-1" value={form.ruolo} onChange={e=>setForm({...form, ruolo:e.target.value})} disabled={!canEdit}>
+              <option value="user">user</option>
+              <option value="cashier">cashier</option>
+              <option value="admin">admin</option>
+            </select>
+            <div className="col-span-2 flex justify-end">
+              <button disabled={!canEdit} className="rounded-lg bg-zinc-100 text-zinc-900 px-4 py-2 text-sm font-medium hover:bg-white disabled:opacity-50">Crea</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      {/* Modale modifica */}
+      {editing && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
+          <form onSubmit={saveEdit} className="w-[520px] rounded-2xl border border-zinc-700 bg-zinc-900 p-5">
+            <div className="text-lg font-semibold mb-3">Modifica: {editing.username}</div>
+            <div className="grid grid-cols-2 gap-3">
+              <input className="rounded-lg bg-zinc-950 border border-zinc-800 px-3 py-2" placeholder="Nome" value={editing.nome||""} onChange={e=>setEditing({...editing!, nome:e.target.value})} disabled={!canEdit}/>
+              <input className="rounded-lg bg-zinc-950 border border-zinc-800 px-3 py-2" placeholder="Cognome" value={editing.cognome||""} onChange={e=>setEditing({...editing!, cognome:e.target.value})} disabled={!canEdit}/>
+              <input className="rounded-lg bg-zinc-950 border border-zinc-800 px-3 py-2 col-span-2" placeholder="Email" value={editing.email||""} onChange={e=>setEditing({...editing!, email:e.target.value})} disabled={!canEdit}/>
+              <input className="rounded-lg bg-zinc-950 border border-zinc-800 px-3 py-2" placeholder="Telefono" value={editing.telefono||""} onChange={e=>setEditing({...editing!, telefono:e.target.value})} disabled={!canEdit}/>
+              <select className="rounded-lg bg-zinc-950 border border-zinc-800 px-3 py-2" value={editing.ruolo||"user"} onChange={e=>setEditing({...editing!, ruolo:e.target.value})} disabled={!canEdit}>
+                <option value="user">user</option>
+                <option value="cashier">cashier</option>
+                <option value="admin">admin</option>
+              </select>
+              <input className="rounded-lg bg-zinc-950 border border-zinc-800 px-3 py-2 col-span-2" type="password" placeholder="Nuova password (opzionale)" onChange={e=>setEditing({...editing!, _newPassword:e.target.value} as any)} disabled={!canEdit}/>
+            </div>
+            <div className="mt-4 flex justify-between gap-2">
+              <button type="button" className="px-3 py-2 rounded-lg border border-zinc-700" onClick={()=>setEditing(null)}>Annulla</button>
+              <button disabled={!canEdit} className="px-3 py-2 rounded-lg bg-zinc-100 text-zinc-900 disabled:opacity-50">Salva</button>
+            </div>
+          </form>
+        </div>
+      )}
+    </Section>
+  );
+}

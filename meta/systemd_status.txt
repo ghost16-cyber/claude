@@ -1,0 +1,26 @@
+● scontrini-api.service - Scontrini API (FastAPI/Uvicorn)
+     Loaded: loaded (/etc/systemd/system/scontrini-api.service; enabled; preset: enabled)
+    Drop-In: /run/systemd/system/service.d
+             └─zzz-lxc-service.conf
+     Active: active (running) since Sun 2025-09-07 10:39:20 UTC; 2h 46min ago
+ Invocation: b8dfd063e38b47d2b26a14d68d4bfeef
+   Main PID: 36186 (uvicorn)
+      Tasks: 9 (limit: 37335)
+     Memory: 92M (peak: 92.5M)
+        CPU: 1min 27.446s
+     CGroup: /system.slice/scontrini-api.service
+             ├─36186 /opt/scontrini/venv/bin/python /opt/scontrini/venv/bin/uvicorn main:app --host 127.0.0.1 --port 8080 --workers 2 --proxy-headers "--forwarded-allow-ips=*"
+             ├─36192 /opt/scontrini/venv/bin/python -c "from multiprocessing.resource_tracker import main;main(6)"
+             ├─36193 /opt/scontrini/venv/bin/python -c "from multiprocessing.spawn import spawn_main; spawn_main(tracker_fd=7, pipe_handle=9)" --multiprocessing-fork
+             └─36194 /opt/scontrini/venv/bin/python -c "from multiprocessing.spawn import spawn_main; spawn_main(tracker_fd=7, pipe_handle=13)" --multiprocessing-fork
+
+set 07 13:25:14 Cassa01 uvicorn[36194]: INFO:     192.168.2.49:0 - "GET /health HTTP/1.1" 200 OK
+set 07 13:25:19 Cassa01 uvicorn[36194]: INFO:     192.168.2.49:0 - "GET /printer/status?emittente_id=1 HTTP/1.1" 200 OK
+set 07 13:25:24 Cassa01 uvicorn[36194]: INFO:     192.168.2.49:0 - "GET /health HTTP/1.1" 200 OK
+set 07 13:25:34 Cassa01 uvicorn[36193]: INFO:     192.168.2.49:0 - "GET /health HTTP/1.1" 200 OK
+set 07 13:25:34 Cassa01 uvicorn[36194]: INFO:     192.168.2.49:0 - "GET /printer/status?emittente_id=1 HTTP/1.1" 200 OK
+set 07 13:25:44 Cassa01 uvicorn[36194]: INFO:     192.168.2.49:0 - "GET /health HTTP/1.1" 200 OK
+set 07 13:25:49 Cassa01 uvicorn[36194]: INFO:     192.168.2.49:0 - "GET /printer/status?emittente_id=1 HTTP/1.1" 200 OK
+set 07 13:25:54 Cassa01 uvicorn[36193]: INFO:     192.168.2.49:0 - "GET /health HTTP/1.1" 200 OK
+set 07 13:26:04 Cassa01 uvicorn[36194]: INFO:     192.168.2.49:0 - "GET /health HTTP/1.1" 200 OK
+set 07 13:26:04 Cassa01 uvicorn[36194]: INFO:     192.168.2.49:0 - "GET /printer/status?emittente_id=1 HTTP/1.1" 200 OK

@@ -1,0 +1,18 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root { color-scheme: dark; }
+html, body, #root { height: 100%; }
+.badge{ @apply inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs bg-zinc-800/60 border border-zinc-700 text-zinc-200; }
+.pill { @apply px-4 py-2 rounded-full border text-sm transition-all; }
+.pill-on { @apply bg-zinc-800 border-zinc-600 text-zinc-100 shadow; }
+.pill-off { @apply bg-zinc-900 border-zinc-800 text-zinc-300 hover:bg-zinc-800 hover:border-zinc-700; }
+.card { @apply w-full text-left rounded-2xl border border-zinc-800 bg-zinc-900/60 hover:bg-zinc-900 transition-all shadow-sm hover:shadow p-5; }
+/* --- Users page tweaks --- */
+#users-page .users-table { table-layout: fixed; }
+#users-page .users-table th:last-child,
+#users-page .users-table td:last-child { width: 7.5rem; }           /* colonna Azioni stabile */
+#users-page .users-table td:last-child { white-space: nowrap; }
+#users-page .users-table td:last-child a { display: block; margin: 0; } /* Modifica/Elimina uno per riga */
+#users-page .back-btn { margin-left: auto; }                          /* pulsante Indietro a destra */
